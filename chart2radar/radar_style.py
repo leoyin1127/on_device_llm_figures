@@ -28,6 +28,11 @@ mpl.rcParams.update(
         "xtick.labelsize": 12.5,
         "ytick.labelsize": 11.5,
         "figure.autolayout": False,
+        "text.color": "#000000",
+        "axes.labelcolor": "#000000",
+        "axes.edgecolor": "#000000",
+        "xtick.color": "#000000",
+        "ytick.color": "#000000",
     }
 )
 
@@ -37,31 +42,30 @@ mpl.rcParams.update(
 # Harmonised palette matching the provided reference style
 LINE_COLORS: Dict[str, str] = {
     # Baselines / families mapped onto the 4-colour scheme
-    "gpt-5": "#F28E8C",  # UNI coral
-    "GPT-5": "#F28E8C",
-    "gpt-o4-mini": "#56B3C4",  # REMEDIS teal
+    "GPT-5": "#F28E8C",  # UNI coral
+    "GPT-o4-mini": "#56B3C4",  # REMEDIS teal
     "gpt-o4": "#56B3C4",
     "ChatGPT-4o": "#56B3C4",
-    "deepseek-r1-0528": "#E6C24F",  # CTransPath sunflower
-    "DeepSeek-R1-0528": "#E6C24F",
+    "DeepSeek-R1": "#E6C24F",  # CTransPath sunflower
     "DeepSeek": "#E6C24F",
-    "Qwen3-235B": "#B88FD6",  # ResNet-50 lilac
+    "Qwen3-235b": "#B88FD6",  # ResNet-50 lilac
     "Qwen3": "#B88FD6",
     # OSS ladders inherit softened variants
-    "gpt-oss-20B": "#F6A69F",
-    "gpt-oss-20B (L)": "#F9B8B2",
-    "gpt-oss-20B (M)": "#F49389",
-    "gpt-oss-20B (H)": "#ED7C72",
-    "OSS-20B (L)": "#F9B8B2",
-    "OSS-20B (M)": "#F49389",
-    "OSS-20B (H)": "#ED7C72",
-    "gpt-oss-120B": "#C7A3E1",
-    "gpt-oss-120B (L)": "#D6B8E9",
-    "gpt-oss-120B (M)": "#C59BDD",
-    "gpt-oss-120B (H)": "#B280D1",
-    "OSS-120B (L)": "#D6B8E9",
-    "OSS-120B (M)": "#C59BDD",
-    "OSS-120B (H)": "#B280D1",
+    "gpt-oss-20b": "#F6A69F",
+    "gpt-oss-20b (L)": "#F9B8B2",
+    "gpt-oss-20b (M)": "#F49389",
+    "gpt-oss-20b (H)": "#ED7C72",
+    "gpt-oss-20b finetuned": "#A7D8A6",  # Green for finetuned
+    "OSS-20b (L)": "#F9B8B2",
+    "OSS-20b (M)": "#F49389",
+    "OSS-20b (H)": "#ED7C72",
+    "gpt-oss-120b": "#C7A3E1",
+    "gpt-oss-120b (L)": "#D6B8E9",
+    "gpt-oss-120b (M)": "#C59BDD",
+    "gpt-oss-120b (H)": "#B280D1",
+    "OSS-120b (L)": "#D6B8E9",
+    "OSS-120b (M)": "#C59BDD",
+    "OSS-120b (H)": "#B280D1",
 }
 
 
@@ -86,17 +90,19 @@ def legend_label(name: str) -> str:
         variant = " (H)"
 
     if "gpt-5" in key:
-        return "gpt-5"
+        return "GPT-5"
     if "chatgpt-4o" in key or "chatgpt4o" in key or "o4" in key:
-        return "gpt-o4-mini"
+        return "GPT-o4-mini"
     if "deepseek" in key:
-        return "deepseek-r1-0528"
+        return "DeepSeek-R1"
     if "qwen3" in key:
-        return "Qwen3-235B"
+        return "Qwen3-235b"
+    if "finetuned" in key or "13beams" in key:
+        return "gpt-oss-20b finetuned"
     if "oss-20b" in key:
-        return f"gpt-oss-20B{variant or ''}"
+        return f"gpt-oss-20b{variant or ''}"
     if "oss-120b" in key:
-        return f"gpt-oss-120B{variant or ''}"
+        return f"gpt-oss-120b{variant or ''}"
     return name
 
 
@@ -147,11 +153,11 @@ def make_base_axes(
     ax.set_yticks(tickvals)
     ax.set_yticklabels(
         [f"{tick:g}" for tick in tickvals],
-        color="#5B616B",
+        color="#000000",
         ha="center",
         va="center",
     )
-    ax.tick_params(axis="y", labelsize=11.5, colors="#5B616B", pad=8)
+    ax.tick_params(axis="y", labelsize=11.5, colors="#000000", pad=8)
     ax.set_rlabel_position(90)
     for label in ax.get_yticklabels():
         label.set_fontweight("regular")
@@ -206,7 +212,7 @@ def place_section_labels(ax: plt.Axes, angles: np.ndarray, labels: Sequence[str]
             label,
             ha=h_align,
             va=v_align,
-            color="#364152",
+            color="#000000",
             fontsize=13,
             bbox=dict(
                 facecolor="#FFFFFF",

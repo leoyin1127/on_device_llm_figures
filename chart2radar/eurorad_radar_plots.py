@@ -18,6 +18,7 @@ from radar_style import (
 
 
 DATA_PATH = Path(__file__).parent / "data" / "OSS Benchmarking Results - Eurorad.csv"
+FINETUNE_DATA_PATH = Path(__file__).parent / "data" / "OSS Benchmarking Results - finetune-Eurorad.csv"
 OUTPUT_DIR = Path(__file__).parent / "output"
 
 
@@ -41,36 +42,35 @@ PLOT_SPECS: Sequence[PlotSpec] = (
     PlotSpec(
         key="a",
         title="",
-        description="All families with high-capacity OSS variants (H)",
+        description="All families with gpt-oss-20b variants",
         group_matchers={
-            "gpt-5": ("gpt-5",),
-            "gpt-o4-mini": ("o4-mini", "gpt-o4", "chatgpt-4o"),
-            "DeepSeek-R1-0528": ("deepseek",),
-            "Qwen3-235B": ("qwen3",),
-            "gpt-oss-20B (H)": ("oss-20b (h)",),
-            "gpt-oss-120B (H)": ("oss-120b (h)",),
+            "GPT-5": ("gpt-5",),
+            "GPT-o4-mini": ("o4-mini", "gpt-o4", "chatgpt-4o"),
+            "DeepSeek-R1": ("deepseek",),
+            "Qwen3-235b": ("qwen3",),
+            "gpt-oss-20b (H)": ("oss-20b (h)",),
+            "gpt-oss-20b finetuned": ("13beams",),
         },
     ),
     PlotSpec(
         key="b",
         title="",
-        description="OSS-120B ladder (L/M/H) compared with gpt-5 reference",
+        description="gpt-oss-20b: regular (H) vs finetuned, compared with GPT-5",
         group_matchers={
-            "gpt-5": ("gpt-5",),
-            "gpt-oss-120B (L)": ("oss-120b (l)",),
-            "gpt-oss-120B (M)": ("oss-120b (m)",),
-            "gpt-oss-120B (H)": ("oss-120b (h)",),
+            "GPT-5": ("gpt-5",),
+            "gpt-oss-20b (H)": ("oss-20b (h)",),
+            "gpt-oss-20b finetuned": ("13beams",),
         },
     ),
     PlotSpec(
         key="c",
         title="",
-        description="OSS-20B ladder (L/M/H) compared with gpt-5 reference",
+        description="OSS-20b ladder (L/M/H) compared with GPT-5 reference",
         group_matchers={
-            "gpt-5": ("gpt-5",),
-            "gpt-oss-20B (L)": ("oss-20b (l)",),
-            "gpt-oss-20B (M)": ("oss-20b (m)",),
-            "gpt-oss-20B (H)": ("oss-20b (h)",),
+            "GPT-5": ("gpt-5",),
+            "gpt-oss-20b (L)": ("oss-20b (l)",),
+            "gpt-oss-20b (M)": ("oss-20b (m)",),
+            "gpt-oss-20b (H)": ("oss-20b (h)",),
         },
     ),
 )
@@ -79,11 +79,22 @@ PLOT_SPECS: Sequence[PlotSpec] = (
 def load_accuracy_by_section(df: pd.DataFrame, model_columns: Iterable[str]) -> Dict[str, Dict[str, float]]:
     """Compute per-section accuracy for each model column."""
 
+    def normalize_text(text):
+        """Normalize text for comparison: lowercase and strip whitespace."""
+        if pd.isna(text):
+            return ""
+        return str(text).lower().strip()
+
     accuracy: Dict[str, Dict[str, float]] = {}
     for section, section_df in df.groupby("Section", dropna=True, sort=False):
         section_accuracy: Dict[str, float] = {}
+        # Normalize ground truth for this section
+        normalized_gt = section_df["FinalDiagnosis"].apply(normalize_text)
+        
         for col in model_columns:
-            correct = (section_df[col] == section_df["FinalDiagnosis"]).sum()
+            # Normalize predictions
+            normalized_pred = section_df[col].apply(normalize_text)
+            correct = (normalized_pred == normalized_gt).sum()
             total = len(section_df)
             section_accuracy[col] = (correct / total) * 100 if total else 0.0
         section_key = section if isinstance(section, str) else str(section)
@@ -179,10 +190,10 @@ def render_plot(
             angles_closed,
             values_closed,
             color=line_color,
-            linewidth=3.0 if family == "gpt-5" else 2.4,
-            linestyle="--" if family == "gpt-5" else "-",
+            linewidth=3.0 if family == "GPT-5" else 2.4,
+            linestyle="--" if family == "GPT-5" else "-",
             marker="o",
-            markersize=6.4 if family == "gpt-5" else 5.6,
+            markersize=6.4 if family == "GPT-5" else 5.6,
             markerfacecolor=line_color,
             markeredgecolor="#FFFFFF",
             markeredgewidth=1.3,
@@ -213,15 +224,19 @@ def render_plot(
         legend.get_frame().set_facecolor("#FFFFFF")
         legend.get_frame().set_edgecolor("#C4CBD3")
         legend.get_frame().set_linewidth(1.0)
+        # Set legend text colors to black
+        for text in legend.get_texts():
+            text.set_color("#000000")
+        legend.get_title().set_color("#000000")
 
-    ax.set_title(spec.title, pad=32, fontsize=21, color="#1F2430")
+    ax.set_title(spec.title, pad=32, fontsize=21, color="#000000")
     fig.subplots_adjust(left=0.07, right=0.98, top=0.9, bottom=0.08)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     png_path = OUTPUT_DIR / spec.png_name
     pdf_path = OUTPUT_DIR / spec.pdf_name
-    fig.savefig(png_path, dpi=300, bbox_inches="tight", facecolor=fig.get_facecolor())
-    fig.savefig(pdf_path, dpi=300, bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(png_path, dpi=900, bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(pdf_path, dpi=900, bbox_inches="tight", facecolor=fig.get_facecolor())
     print(f"- {spec.key.upper()} saved: {png_path.name}, {pdf_path.name}")
 
     # Summary output in console
@@ -236,7 +251,19 @@ def render_plot(
 
 
 def main() -> None:
+    # Load original Eurorad data
     df = pd.read_csv(DATA_PATH)
+    
+    # Load finetune data - select only the 13-beams columns we need
+    df_finetune = pd.read_csv(FINETUNE_DATA_PATH)
+    finetune_cols = ['case_id', 'Section', 'FinalDiagnosis',
+                     'oss20b-13beams-v1', 'oss20b-13beams-v2', 'oss20b-13beams-v3']
+    df_finetune_selected = df_finetune[finetune_cols].copy()
+    
+    # Add the 13-beams columns to the original dataframe
+    # Match on case_id and Section
+    for col in ['oss20b-13beams-v1', 'oss20b-13beams-v2', 'oss20b-13beams-v3']:
+        df[col] = df_finetune_selected[col]
 
     metadata_cols = {
         "case_id",

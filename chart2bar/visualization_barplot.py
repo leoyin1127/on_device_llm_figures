@@ -80,21 +80,21 @@ def categorize_model(model_name: str) -> tuple:
     """Group models by base type and extract version info."""
     model_lower = model_name.lower()
     if 'gpt5' in model_lower or 'gpt-5' in model_lower:
-        return 'gpt-5', model_name.split('-')[-1] if '-' in model_name else 'v1'
+        return 'GPT-5', model_name.split('-')[-1] if '-' in model_name else 'v1'
     elif 'o4-mini' in model_lower:
-        return 'gpt-o4-mini', model_name.split('-')[-1] if '-' in model_name else 'v1'
+        return 'GPT-o4-mini', model_name.split('-')[-1] if '-' in model_name else 'v1'
     elif 'deepseek' in model_lower or 'ds-r1' in model_lower:
-        return 'deepseek-r1-0528', model_name.split()[-1] if 'v' in model_name else 'v1'
+        return 'DeepSeek-R1', model_name.split()[-1] if 'v' in model_name else 'v1'
     elif 'qwen3' in model_lower or 'qwen-3' in model_lower:
-        return 'Qwen3-235B', model_name.split()[-1] if 'v' in model_name else 'v1'
+        return 'Qwen3-235b', model_name.split()[-1] if 'v' in model_name else 'v1'
     elif 'oss-20b' in model_lower or 'oss20b' in model_lower:
         config = 'L' if '(L)' in model_name else 'M' if '(M)' in model_name else 'H'
         version = model_name.split()[-1] if 'v' in model_name else 'v1'
-        return f'gpt-oss-20B ({config})', version
+        return f'gpt-oss-20b ({config})', version
     elif 'oss-120b' in model_lower or 'oss120b' in model_lower:
         config = 'L' if '(L)' in model_name else 'M' if '(M)' in model_name else 'H'
         version = model_name.split()[-1] if 'v' in model_name else 'v1'
-        return f'gpt-oss-120B ({config})', version
+        return f'gpt-oss-120b ({config})', version
     else:
         return 'Other', 'v1'
 
@@ -108,47 +108,28 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
     group_stats = perf_df.groupby('model_group')['performance'].agg(['mean', 'std']).fillna(0)
     
     # Sort groups for consistent ordering - group OSS models together
-    group_order = ['gpt-5', 'gpt-o4-mini', 'deepseek-r1-0528', 'Qwen3-235B', 'gpt-oss-20B (L)', 'gpt-oss-20B (M)', 'gpt-oss-20B (H)', 
-                   'gpt-oss-120B (L)', 'gpt-oss-120B (M)', 'gpt-oss-120B (H)']
+    group_order = ['GPT-5', 'GPT-o4-mini', 'DeepSeek-R1', 'Qwen3-235b', 'gpt-oss-20b (L)', 'gpt-oss-20b (M)', 'gpt-oss-20b (H)', 
+                   'gpt-oss-120b (L)', 'gpt-oss-120b (M)', 'gpt-oss-120b (H)']
     group_stats = group_stats.reindex([g for g in group_order if g in group_stats.index])
     
-    # Create color mapping by model family
+    # Nature-style consistent color scheme (matching radar plots)
+    NATURE_COLORS = {
+        'GPT-5': '#F28E8C',          # Coral
+        'GPT-o4-mini': '#56B3C4',     # Teal
+        'DeepSeek-R1': '#E6C24F',     # Gold
+        'Qwen3-235b': '#B88FD6',      # Lilac
+        'gpt-oss-20b (L)': '#F9B8B2', # Light coral
+        'gpt-oss-20b (M)': '#F49389', # Medium coral
+        'gpt-oss-20b (H)': '#ED7C72', # Dark coral
+        'gpt-oss-120b (L)': '#D6B8E9',# Light purple
+        'gpt-oss-120b (M)': '#C59BDD',# Medium purple
+        'gpt-oss-120b (H)': '#B280D1',# Dark purple
+    }
+    
+    # Apply colors to groups
     color_map = {}
-    gpt5_groups = [g for g in group_stats.index if g == 'gpt-5']
-    gpt_o4_groups = [g for g in group_stats.index if g == 'gpt-o4-mini']
-    deepseek_groups = [g for g in group_stats.index if 'deepseek' in g.lower()]
-    qwen_groups = [g for g in group_stats.index if 'Qwen' in g]
-    oss20b_groups = [g for g in group_stats.index if 'oss-20B' in g]
-    oss120b_groups = [g for g in group_stats.index if 'oss-120B' in g]
-    
-    # Generate colors for each family
-    if gpt5_groups:
-        for group in gpt5_groups:
-            color_map[group] = 'lightblue'  # Light blue for GPT-5
-    
-    if gpt_o4_groups:
-        for group in gpt_o4_groups:
-            color_map[group] = (101/255, 151/255, 197/255)  # Custom blue for o4-mini
-    
-    if deepseek_groups:
-        reds = plt.colormaps.get_cmap("Reds").resampled(len(deepseek_groups) + 2)
-        for i, group in enumerate(deepseek_groups):
-            color_map[group] = reds(i + 1)
-    
-    if qwen_groups:
-        greens = plt.colormaps.get_cmap("Greens").resampled(len(qwen_groups) + 2)
-        for i, group in enumerate(qwen_groups):
-            color_map[group] = greens(i + 1)
-    
-    if oss20b_groups:
-        purples = plt.colormaps.get_cmap("Purples").resampled(len(oss20b_groups) + 2)
-        for i, group in enumerate(oss20b_groups):
-            color_map[group] = purples(i + 2)
-    
-    if oss120b_groups:
-        oranges = plt.colormaps.get_cmap("Oranges").resampled(len(oss120b_groups) + 2)
-        for i, group in enumerate(oss120b_groups):
-            color_map[group] = oranges(i + 2)
+    for group in group_stats.index:
+        color_map[group] = NATURE_COLORS.get(group, '#999999')  # Gray fallback
 
     # Create positions with tight spacing within OSS groups
     group_names = list(group_stats.index)
@@ -160,8 +141,8 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
             prev_group = group_names[i-1]
             
             # Tight spacing within OSS model variants (0.6 instead of 1.0)
-            if ('oss-20B' in prev_group and 'oss-20B' in group_name) or \
-               ('oss-120B' in prev_group and 'oss-120B' in group_name):
+            if ('oss-20b' in prev_group and 'oss-20b' in group_name) or \
+               ('oss-120b' in prev_group and 'oss-120b' in group_name):
                 current_pos += 0.6
             # Normal spacing for all other transitions
             else:
@@ -174,13 +155,14 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
     # Define different bar widths for visual grouping
     bar_widths = []
     for group in group_names:
-        if 'oss-20B' in group or 'oss-120B' in group:
+        if 'oss-20b' in group or 'oss-120b' in group:
             bar_widths.append(0.6)  # Narrower bars for OSS models
         else:
             bar_widths.append(0.8)  # Standard width for other models
     
-    # Create bar plot
-    fig, ax = plt.subplots(figsize=(16, 8))
+    # Create bar plot (width: 42cm, height: 12cm)
+    # Convert cm to inches: 42cm / 2.54 = 16.535433in, 12cm / 2.54 = 4.724409in
+    fig, ax = plt.subplots(figsize=(42/2.54, 12/2.54))
     ax.set_facecolor('white')
     bars = []
     for i, (pos, width) in enumerate(zip(x_positions, bar_widths)):
@@ -192,10 +174,10 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
     # Customize x-axis labels - make them cleaner
     clean_labels = []
     for group in group_stats.index:
-        if 'oss-20B' in group:
-            clean_labels.append(group.replace('gpt-oss-20B (', '').replace(')', ''))
-        elif 'oss-120B' in group:
-            clean_labels.append(group.replace('gpt-oss-120B (', '').replace(')', ''))
+        if 'oss-20b' in group:
+            clean_labels.append(group.replace('gpt-oss-20b (', '').replace(')', ''))
+        elif 'oss-120b' in group:
+            clean_labels.append(group.replace('gpt-oss-120b (', '').replace(')', ''))
         else:
             clean_labels.append(group)
     
@@ -211,20 +193,20 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
     else:  # eurorad
         ax.set_ylim(60, 100)
     
-    # Add value labels on bars
-    for i, (pos, mean_val) in enumerate(zip(x_positions, group_stats['mean'])):
-        ax.text(pos, mean_val + 0.5, f'{mean_val:.1f}%', ha='center', va='bottom', 
+    # Add value labels on bars (above error bars)
+    for i, (pos, mean_val, std_val) in enumerate(zip(x_positions, group_stats['mean'], group_stats['std'])):
+        ax.text(pos, mean_val + std_val + 0.3, f'{mean_val:.1f}', ha='center', va='bottom', 
                 fontweight='bold', fontsize=9)
     
     # Add subtle group indicators using brackets for OSS models
-    oss20b_positions = [pos for pos, group in zip(x_positions, group_names) if 'oss-20B' in group]
-    oss120b_positions = [pos for pos, group in zip(x_positions, group_names) if 'oss-120B' in group]
+    oss20b_positions = [pos for pos, group in zip(x_positions, group_names) if 'oss-20b' in group]
+    oss120b_positions = [pos for pos, group in zip(x_positions, group_names) if 'oss-120b' in group]
     
     # Adjust bracket position based on dataset
     if dataset_name == "ophthalmology":
-        y_bracket = 48.5
+        y_bracket = 47
     else:  # eurorad
-        y_bracket = 58.5
+        y_bracket = 57
     
     if oss20b_positions:
         # Draw a bracket pointing upward for OSS-20B bars
@@ -234,7 +216,7 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
                 'k-', linewidth=1, alpha=0.7, clip_on=False)
         ax.plot([max(oss20b_positions)+0.3, max(oss20b_positions)+0.3], [y_bracket, y_bracket+0.3], 
                 'k-', linewidth=1, alpha=0.7, clip_on=False)
-        ax.text(np.mean(oss20b_positions), y_bracket-0.8, 'gpt-oss-20B', ha='center', va='center',
+        ax.text(np.mean(oss20b_positions), y_bracket-0.8, 'gpt-oss-20b', ha='center', va='center',
                 fontsize=10, color='black', clip_on=False)
     
     if oss120b_positions:
@@ -245,7 +227,7 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
                 'k-', linewidth=1, alpha=0.7, clip_on=False)
         ax.plot([max(oss120b_positions)+0.3, max(oss120b_positions)+0.3], [y_bracket, y_bracket+0.3], 
                 'k-', linewidth=1, alpha=0.7, clip_on=False)
-        ax.text(np.mean(oss120b_positions), y_bracket-0.8, 'gpt-oss-120B', ha='center', va='center',
+        ax.text(np.mean(oss120b_positions), y_bracket-0.8, 'gpt-oss-120b', ha='center', va='center',
                 fontsize=10, color='black', clip_on=False)
     
     fig.tight_layout()
@@ -254,7 +236,7 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
     
     # Save figure
     output_path = output_dir / f'{dataset_name}_llm_results.png'
-    fig.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    fig.savefig(output_path, dpi=900, bbox_inches='tight', facecolor='white')
     plt.close(fig)
     
     print(f"✓ Generated {dataset_name} plot: {output_path}")

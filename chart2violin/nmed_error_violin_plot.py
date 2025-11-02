@@ -31,35 +31,39 @@ def parse_nmed_csv(filename):
             continue
         
         # Standardize model names to match barplot naming conventions
-        # 1. GPT-5: gpt5-0807-m1 -> gpt-5
+        # 1. GPT-5: gpt5-0807-m1 -> GPT-5
         if 'gpt5' in model_clean.lower():
-            model_clean = 'gpt-5'
+            model_clean = 'GPT-5'
         
-        # 2. o4-mini: o4-mini-m1 -> gpt-o4-mini
+        # 2. GPT-o4-mini: o4-mini-m1 -> GPT-o4-mini
         elif 'o4-mini' in model_clean.lower():
-            model_clean = 'gpt-o4-mini'
+            model_clean = 'GPT-o4-mini'
         
-        # 3. DeepSeek: deepseek-0528-v1 or deepseek-r1-0528-v1 -> deepseek-r1-0528
+        # 3. DeepSeek: deepseek-0528-v1 or deepseek-r1-0528-v1 -> DeepSeek-R1
         elif 'deepseek' in model_clean.lower():
-            model_clean = 'deepseek-r1-0528'
+            model_clean = 'DeepSeek-R1'
         
-        # 4. OSS models: oss20b (L) -> gpt-oss-20B (L), etc.
+        # 4. Qwen3: qwen3-235b -> Qwen3-235b
+        elif 'qwen3' in model_clean.lower() or 'qwen-3' in model_clean.lower():
+            model_clean = 'Qwen3-235b'
+        
+        # 5. OSS models: oss20b (L) -> gpt-oss-20b (L), etc.
         elif 'oss20b' in model_clean.lower():
             if '(l)' in model_clean.lower():
-                model_clean = 'gpt-oss-20B (L)'
+                model_clean = 'gpt-oss-20b (L)'
             elif '(m)' in model_clean.lower():
-                model_clean = 'gpt-oss-20B (M)'
+                model_clean = 'gpt-oss-20b (M)'
             elif '(h)' in model_clean.lower():
-                model_clean = 'gpt-oss-20B (H)'
+                model_clean = 'gpt-oss-20b (H)'
         
-        # 5. OSS 120B models: oss120b (L) -> gpt-oss-120B (L), etc.
+        # 5. OSS 120b models: oss120b (L) -> gpt-oss-120b (L), etc.
         elif 'oss120b' in model_clean.lower():
             if '(l)' in model_clean.lower():
-                model_clean = 'gpt-oss-120B (L)'
+                model_clean = 'gpt-oss-120b (L)'
             elif '(m)' in model_clean.lower():
-                model_clean = 'gpt-oss-120B (M)'
+                model_clean = 'gpt-oss-120b (M)'
             elif '(h)' in model_clean.lower():
-                model_clean = 'gpt-oss-120B (H)'
+                model_clean = 'gpt-oss-120b (H)'
         
         filtered_model_indices.append(idx)
         filtered_model_names.append(model_clean)
@@ -111,6 +115,20 @@ def parse_nmed_csv(filename):
 
 def create_violin_plot(model_errors, title, filename, output_dir):
     """Create violin plot for a single dataset"""
+    # Nature-style consistent color scheme
+    NATURE_COLORS = {
+        'GPT-5': '#F28E8C',
+        'GPT-o4-mini': '#56B3C4',
+        'DeepSeek-R1': '#E6C24F',
+        'Qwen3-235b': '#B88FD6',
+        'gpt-oss-20b (L)': '#F9B8B2',
+        'gpt-oss-20b (M)': '#F49389',
+        'gpt-oss-20b (H)': '#ED7C72',
+        'gpt-oss-120b (L)': '#D6B8E9',
+        'gpt-oss-120b (M)': '#C59BDD',
+        'gpt-oss-120b (H)': '#B280D1',
+    }
+    
     # Create series and values lists following the reference format
     series = []
     values = []
@@ -128,10 +146,16 @@ def create_violin_plot(model_errors, title, filename, output_dir):
     # Create figure following the reference style
     fig = go.Figure()
 
-    # Add violin plots for each category (following reference format)
+    # Add violin plots for each category with consistent colors
     for category in df['series'].unique():
-        fig.add_trace(go.Violin(x=df['series'][df['series'] == category],
-                                y=df['values'][df['series'] == category]))
+        color = NATURE_COLORS.get(category, '#999999')  # Gray fallback
+        fig.add_trace(go.Violin(
+            x=df['series'][df['series'] == category],
+            y=df['values'][df['series'] == category],
+            fillcolor=color,
+            line=dict(color=color),
+            opacity=0.7
+        ))
 
     # Add box plot overlay (following reference format)
     fig.add_trace(go.Box(x=df['series'],
@@ -141,14 +165,17 @@ def create_violin_plot(model_errors, title, filename, output_dir):
                          line=dict(width=0.8, color='black')))
 
     # Update layout following the reference format
+    # Figure size: 42cm width × 12cm height
+    # Convert to pixels at 96 DPI: 42cm/2.54*96 = 1587.4px, 12cm/2.54*96 = 453.5px
+    fig_width = int(42 / 2.54 * 96)  # 1587 pixels
+    fig_height = int(12 / 2.54 * 96)  # 454 pixels
+    
     fig.update_layout(showlegend=False)
     fig.update_yaxes(range=[-4.1, 5.5])
     fig.update_layout(
         font=dict(family='Times New Roman', size=17, color="#000000"),
-        width=1400,
-        height=550,
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
+        width=fig_width,
+        height=fig_height,
         xaxis=dict(title=""),
         yaxis=dict(title="Error",
                    tickvals=[-4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
@@ -161,7 +188,7 @@ def create_violin_plot(model_errors, title, filename, output_dir):
 
     # Save the plot following reference format
     output_path = output_dir / filename
-    fig.write_image(str(output_path), width=1400, height=550, scale=1)
+    fig.write_image(str(output_path), width=fig_width, height=fig_height, scale=4)
     
     return len(values), model_errors, output_path
 
