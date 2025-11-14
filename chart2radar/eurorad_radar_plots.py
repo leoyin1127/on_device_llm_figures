@@ -42,24 +42,24 @@ PLOT_SPECS: Sequence[PlotSpec] = (
     PlotSpec(
         key="a",
         title="",
-        description="All families with gpt-oss-20b variants",
+        description="All families with gpt-oss-20b (L) baseline and finetuned variants",
         group_matchers={
             "GPT-5": ("gpt-5",),
             "GPT-o4-mini": ("o4-mini", "gpt-o4", "chatgpt-4o"),
             "DeepSeek-R1": ("deepseek",),
             "Qwen3-235b": ("qwen3",),
-            "gpt-oss-20b (H)": ("oss-20b (h)",),
-            "gpt-oss-20b finetuned": ("13beams",),
+            "gpt-oss-20b (L)": ("oss-20b (l)",),
+            "gpt-oss-20b (L) finetuned": ("13beams",),
         },
     ),
     PlotSpec(
         key="b",
         title="",
-        description="gpt-oss-20b: regular (H) vs finetuned, compared with GPT-5",
+        description="gpt-oss-20b: regular (L) vs finetuned, compared with GPT-5",
         group_matchers={
             "GPT-5": ("gpt-5",),
-            "gpt-oss-20b (H)": ("oss-20b (h)",),
-            "gpt-oss-20b finetuned": ("13beams",),
+            "gpt-oss-20b (L)": ("oss-20b (l)",),
+            "gpt-oss-20b (L) finetuned": ("13beams",),
         },
     ),
     PlotSpec(
@@ -211,11 +211,11 @@ def render_plot(
 
     legend = ax.legend(
         loc="upper left",
-        bbox_to_anchor=(1.02, 1.02),
+        bbox_to_anchor=(1.02, 1.10),
         frameon=True,
-        fontsize=13,
+        fontsize=22,
         title="Model family",
-        title_fontsize=13,
+        title_fontsize=22,
         borderpad=0.8,
         labelspacing=0.5,
         borderaxespad=0.0,
@@ -229,14 +229,26 @@ def render_plot(
             text.set_color("#000000")
         legend.get_title().set_color("#000000")
 
-    ax.set_title(spec.title, pad=32, fontsize=21, color="#000000")
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.9, bottom=0.08)
+    ax.set_title(spec.title, pad=32, fontsize=30, color="#000000")
+    fig.subplots_adjust(left=0.07, right=0.95, top=0.96, bottom=0.28)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     png_path = OUTPUT_DIR / spec.png_name
     pdf_path = OUTPUT_DIR / spec.pdf_name
-    fig.savefig(png_path, dpi=900, bbox_inches="tight", facecolor=fig.get_facecolor())
-    fig.savefig(pdf_path, dpi=900, bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(
+        png_path,
+        dpi=900,
+        bbox_inches="tight",
+        pad_inches=0.6,
+        facecolor=fig.get_facecolor(),
+    )
+    fig.savefig(
+        pdf_path,
+        dpi=900,
+        bbox_inches="tight",
+        pad_inches=0.6,
+        facecolor=fig.get_facecolor(),
+    )
     print(f"- {spec.key.upper()} saved: {png_path.name}, {pdf_path.name}")
 
     # Summary output in console

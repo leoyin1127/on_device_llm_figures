@@ -1,5 +1,5 @@
 def main():
-    print("Hello from fig-scripts-toalif!")
+    print("Hello from main.py!")
 
 
 if __name__ == "__main__":

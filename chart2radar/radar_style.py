@@ -52,13 +52,14 @@ LINE_COLORS: Dict[str, str] = {
     "Qwen3": "#B88FD6",
     # OSS ladders inherit softened variants
     "gpt-oss-20b": "#F6A69F",
-    "gpt-oss-20b (L)": "#F9B8B2",
-    "gpt-oss-20b (M)": "#F49389",
-    "gpt-oss-20b (H)": "#ED7C72",
-    "gpt-oss-20b finetuned": "#A7D8A6",  # Green for finetuned
-    "OSS-20b (L)": "#F9B8B2",
-    "OSS-20b (M)": "#F49389",
-    "OSS-20b (H)": "#ED7C72",
+    "gpt-oss-20b (L)": "#ED7C72",  # keep baseline L model in red
+    "gpt-oss-20b (M)": "#F6A69F",
+    "gpt-oss-20b (H)": "#C94E45",
+    "gpt-oss-20b (L) finetuned": "#5C8BFF",  # Electric blue highlights finetuned (L) model
+    "gpt-oss-20b finetuned": "#5C8BFF",  # alias for backward compatibility
+    "OSS-20b (L)": "#ED7C72",
+    "OSS-20b (M)": "#F6A69F",
+    "OSS-20b (H)": "#C94E45",
     "gpt-oss-120b": "#C7A3E1",
     "gpt-oss-120b (L)": "#D6B8E9",
     "gpt-oss-120b (M)": "#C59BDD",
@@ -98,7 +99,7 @@ def legend_label(name: str) -> str:
     if "qwen3" in key:
         return "Qwen3-235b"
     if "finetuned" in key or "13beams" in key:
-        return "gpt-oss-20b finetuned"
+        return "gpt-oss-20b (L) finetuned"
     if "oss-20b" in key:
         return f"gpt-oss-20b{variant or ''}"
     if "oss-120b" in key:
@@ -111,14 +112,26 @@ def format_section_labels(
     line_length: int = 26,
     line_break: str = "\n",
 ) -> List[str]:
-    """Wrap long section names for polar axes."""
+    """Wrap section names and ensure each word is capitalized for readability."""
+
+    def capitalise_words(text: str) -> str:
+        """Ensure the first letter of every word is uppercase without altering the rest."""
+        parts = text.split(" ")
+        capped_parts = []
+        for part in parts:
+            if part:
+                capped_parts.append(part[0].upper() + part[1:])
+            else:
+                capped_parts.append(part)
+        return " ".join(capped_parts)
 
     formatted: List[str] = []
     for label in labels:
-        if len(label) <= line_length:
-            formatted.append(label)
+        normalized = capitalise_words(label)
+        if len(normalized) <= line_length:
+            formatted.append(normalized)
             continue
-        wrapped = wrap(label, width=line_length, break_long_words=False, drop_whitespace=False)
+        wrapped = wrap(normalized, width=line_length, break_long_words=False, drop_whitespace=False)
         formatted.append(line_break.join(wrapped))
     return formatted
 
@@ -135,7 +148,7 @@ def make_base_axes(
 
     angles = np.linspace(0, 2 * np.pi, num_axes, endpoint=False)
 
-    fig = plt.figure(figsize=(12.5, 12.5))
+    fig = plt.figure(figsize=(12.5, 18.0))
     fig.patch.set_facecolor(PAPER_BG_COLOR)
 
     ax = fig.add_subplot(111, polar=True)
@@ -182,8 +195,8 @@ def place_section_labels(ax: plt.Axes, angles: np.ndarray, labels: Sequence[str]
 
     transform = ax.get_xaxis_transform()
     base_offset = 0.97
-    horizontal_boost = 0.08
-    vertical_boost = 0.06
+    horizontal_boost = 0.07
+    vertical_boost = 0.08
 
     for angle, label in zip(angles, labels):
         # Due to theta offset, sin(angle) maps to Cartesian x, cos(angle) to y
@@ -191,7 +204,7 @@ def place_section_labels(ax: plt.Axes, angles: np.ndarray, labels: Sequence[str]
         y_component = np.cos(angle)
 
         radial = base_offset + horizontal_boost * abs(x_component) + vertical_boost * abs(y_component)
-
+        
         if x_component > 0.3:
             h_align = "left"
         elif x_component < -0.3:
@@ -213,7 +226,7 @@ def place_section_labels(ax: plt.Axes, angles: np.ndarray, labels: Sequence[str]
             ha=h_align,
             va=v_align,
             color="#000000",
-            fontsize=13,
+            fontsize=22,
             bbox=dict(
                 facecolor="#FFFFFF",
                 edgecolor="#B8C3CE",

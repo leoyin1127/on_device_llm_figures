@@ -75,9 +75,9 @@ def create_comprehensive_comparison_plot(output_dir: Path):
     deepseek_models = eurorad_df[eurorad_df['model'].str.contains('deepseek', case=False, na=False)]
     deepseek_values = deepseek_models['performance'].values
     
-    # Extract regular gpt-oss-20b (H) values from Eurorad
-    oss20b_models = eurorad_df[eurorad_df['model'].str.contains(r'oss-20b \(H\)', case=False, na=False, regex=True)]
-    oss20b_values = oss20b_models['performance'].values
+    # Extract gpt-oss-20b (L) values from Eurorad (low reasoning effort variant)
+    oss20b_l_models = eurorad_df[eurorad_df['model'].str.contains(r'oss-20b \(L\)', case=False, na=False, regex=True)]
+    oss20b_l_values = oss20b_l_models['performance'].values
     
     # Extract 13-beams models (these are the finetuned models)
     finetuned_values = np.array([85.99, 87.44, 85.02])
@@ -86,18 +86,18 @@ def create_comprehensive_comparison_plot(output_dir: Path):
     print(f"GPT-5: {gpt5_values}")
     print(f"o4-mini: {o4mini_values}")
     print(f"DeepSeek: {deepseek_values}")
-    print(f"gpt-oss-20b: {oss20b_values}")
-    print(f"gpt-oss-20b finetuned (13-beams): {finetuned_values}")
+    print(f"gpt-oss-20b (L): {oss20b_l_values}")
+    print(f"gpt-oss-20b (L) finetuned (13-beams): {finetuned_values}")
     
     # Calculate mean and std
     models = ['GPT-5', 'GPT-o4-mini', 'DeepSeek-R1', 
-              'gpt-oss-20b', 'gpt-oss-20b\nfinetuned']
+              'gpt-oss-20b (L)', 'gpt-oss-20b (L)\nfinetuned']
     
     means = [
         np.mean(gpt5_values) if len(gpt5_values) > 0 else 0,
         np.mean(o4mini_values) if len(o4mini_values) > 0 else 0,
         np.mean(deepseek_values) if len(deepseek_values) > 0 else 0,
-        np.mean(oss20b_values) if len(oss20b_values) > 0 else 0,
+        np.mean(oss20b_l_values) if len(oss20b_l_values) > 0 else 0,
         np.mean(finetuned_values) if len(finetuned_values) > 0 else 0
     ]
     
@@ -105,13 +105,13 @@ def create_comprehensive_comparison_plot(output_dir: Path):
         np.std(gpt5_values, ddof=1) if len(gpt5_values) > 1 else 0,
         np.std(o4mini_values, ddof=1) if len(o4mini_values) > 1 else 0,
         np.std(deepseek_values, ddof=1) if len(deepseek_values) > 1 else 0,
-        np.std(oss20b_values, ddof=1) if len(oss20b_values) > 1 else 0,
+        np.std(oss20b_l_values, ddof=1) if len(oss20b_l_values) > 1 else 0,
         np.std(finetuned_values, ddof=1) if len(finetuned_values) > 1 else 0
     ]
     
     # Nature-style consistent color scheme (matching other plots)
-    colors = ['#F28E8C', '#56B3C4', '#E6C24F', '#ED7C72', '#A7D8A6']
-    # GPT-5: coral, GPT-o4-mini: teal, DeepSeek-R1: gold, gpt-oss-20b: dark coral, gpt-oss-20b finetuned: green
+    colors = ['#F28E8C', '#56B3C4', '#E6C24F', '#ED7C72', '#5C8BFF']
+    # GPT-5: coral, GPT-o4-mini: teal, DeepSeek-R1: gold, gpt-oss-20b (L): dark coral, gpt-oss-20b (L) finetuned: electric blue
     
     # Create bar plot (width: 20cm, height: 16cm)
     # Convert cm to inches: 20cm / 2.54 = 7.874in, 16cm / 2.54 = 6.299in
@@ -124,8 +124,8 @@ def create_comprehensive_comparison_plot(output_dir: Path):
     
     # Customize axes
     ax.set_xticks(x_positions)
-    ax.set_xticklabels(models, rotation=0, ha='center', fontsize=13)
-    ax.set_ylabel("Diagnostic Accuracy (%)", fontsize=14)
+    ax.set_xticklabels(models, rotation=0, ha='center', fontsize=12)
+    ax.set_ylabel("Accuracy (%)", fontsize=12)
     ax.set_ylim(60, 92)
     ax.grid(axis="y", alpha=0.3)
     
@@ -158,4 +158,3 @@ if __name__ == "__main__":
     
     print("=" * 70)
     print("Plot generated successfully!")
-

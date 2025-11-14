@@ -183,8 +183,7 @@ def create_barplot(perf_df: pd.DataFrame, dataset_name: str, output_dir: Path):
     
     ax.set_xticks(x_positions)
     ax.set_xticklabels(clean_labels, rotation=0, ha='center')
-    ax.set_xlabel("LLMs", fontsize=12, labelpad=15)
-    ax.set_ylabel("Diagnostic Accuracy (%)", fontsize=12)
+    ax.set_ylabel("Accuracy (%)", fontsize=12)
     ax.grid(axis="y", alpha=0.3)
     
     # Adjust y-axis range based on dataset
